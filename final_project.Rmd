@@ -22,6 +22,13 @@ library(lm.beta)
 pokemon_data <- read.csv("/Users/Giga/Desktop/final_project/pokemon_df.csv")
 ```
 
+# Inspecting the data
+```{r}
+str(pokemon_data)
+glimpse(pokemon_data)
+summary(pokemon_data)
+```
+
 ## Pokemon type summary
 ```{r}
 pokemon_types <- pokemon_data %>%
@@ -59,6 +66,7 @@ lightest_pokemon <- pokemon_data %>%
   slice_min(weight, n = 1)
 lightest_pokemon
 #The following pokemons are the lightest (with the same weight): Gastly, Hunter, Flabebe, Cosmog, Kartana
+#Most of these pokemons are in a "mythical" type (such as ghost or fairy), thus there could be a relationship between type and weight
 
 strongest_pokemon <- pokemon_data %>%
   filter(!is.na(attack)) %>%
@@ -66,6 +74,14 @@ strongest_pokemon <- pokemon_data %>%
 strongest_pokemon
 #Mewtwo-mega-x is the stongest pokemon
 
+```
+
+### Exploring type and weight relation
+```{r}
+ggplot(pokemon_data, aes(x = reorder(type_1, weight), y = weight, fill = type_1)) +
+  geom_boxplot(show.legend = FALSE) +
+  labs(title = "Weight and type relation", x = "Pokemon type", y = "Weight (kg)")
+#Fairy and ghost type pokemons are amongst the lightest in general, while steel types are the heaviest
 ```
 
 ## Features visualized
@@ -91,14 +107,9 @@ ggplot(pokemon_long_scaled, aes(x = value_z, group = variable, color = variable)
   theme_minimal()
 ```
 
-```{r}
+### Building regression model
 
-```
-
-```{r}
-
-```
-
+Checking outliers
 ```{r}
 
 ```
