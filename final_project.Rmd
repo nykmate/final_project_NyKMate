@@ -1,0 +1,30 @@
+---
+title: "Final R Programming Project: Pokemons"
+author: "Nyiro Kovacs Mate"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
