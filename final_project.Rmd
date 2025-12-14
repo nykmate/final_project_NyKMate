@@ -6,7 +6,89 @@ editor_options:
   chunk_output_type: console
 ---
 ```{r}
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(stringr)
+library(readxl)
+library(lmtest)
+library(car)
+library(lm.beta)
+```
 
+# Importing data
+```{r}
+pokemon_data <- read.csv("/Users/Giga/Desktop/final_project/pokemon_df.csv")
+```
+
+## Pokemon type summary
+```{r}
+pokemon_types <- pokemon_data %>%
+  count(type_1, sort = TRUE)
+
+ggplot(pokemon_types, aes(x = reorder(type_1, n), y = n)) + 
+  geom_col(fill = "navy") +
+  coord_flip() +
+  labs(title = "Number of pokemons by first type", x = "Type", y = "Number")
+#The most common type is Water, while the rarest is Flying
+```
+
+### Tops (height, weight, attack)
+```{r}
+tallest_pokemon <- pokemon_data %>%
+  filter(!is.na(height)) %>%
+  slice_max(height, n = 1)
+tallest_pokemon
+#The tallest pokemon is Wailord
+
+shortest_pokemon <- pokemon_data %>%
+  filter(!is.na(height)) %>%
+  slice_min(height, n = 1)
+shortest_pokemon
+#The following pokemons are the shortest with the same height: Joltik, Flabebe, Cutiefly, Comfey, Cosmoem
+
+heaviest_pokemon <- pokemon_data %>%
+  filter(!is.na(weight)) %>%
+  slice_max(weight, n = 1)
+heaviest_pokemon
+#The following pokemons are the heaviest with the same weight: Cosmoem (interesting, as it is also one of the shortest), Celesteela
+
+lightest_pokemon <- pokemon_data %>%
+  filter(!is.na(weight)) %>%
+  slice_min(weight, n = 1)
+lightest_pokemon
+#The following pokemons are the lightest (with the same weight): Gastly, Hunter, Flabebe, Cosmog, Kartana
+
+strongest_pokemon <- pokemon_data %>%
+  filter(!is.na(attack)) %>%
+  slice_max(attack, n = 1)
+strongest_pokemon
+#Mewtwo-mega-x is the stongest pokemon
+
+```
+
+## Features visualized
+```{r}
+cols <- c("hp", "attack", "defense", "height", "weight")
+
+pokemon_long_scaled <- pokemon_data %>%
+  select(all_of(cols)) %>%
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "value") %>%
+  filter(!is.na(value)) %>%
+  group_by(variable) %>%
+  mutate(value_z = as.numeric(scale(value))) %>%
+  ungroup()
+
+ggplot(pokemon_long_scaled, aes(x = value_z, group = variable, color = variable)) +
+  geom_density(linewidth = 1) +
+  labs(
+    title = "Standardized distributions of key Pokémon attributes (density)",
+    x = "Standardized value",
+    y = "Density",
+    linetype = "Features"
+  ) +
+  theme_minimal()
 ```
 
 ```{r}
