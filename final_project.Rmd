@@ -76,7 +76,7 @@ strongest_pokemon
 
 ```
 
-### Exploring type and weight relation
+Exploring type and weight relation
 ```{r}
 ggplot(pokemon_data, aes(x = reorder(type_1, weight), y = weight, fill = type_1)) +
   geom_boxplot(show.legend = FALSE) +
@@ -107,17 +107,148 @@ ggplot(pokemon_long_scaled, aes(x = value_z, group = variable, color = variable)
   theme_minimal()
 ```
 
-### Building regression model
+### Building regression model to predict "attack"
 
-Checking outliers
+Building complex model
 ```{r}
+complex_model <- lm(attack ~ height + weight + base_experience + speed + hp, data = pokemon_data)
+complex_model
+```
 
+Influential cases
+```{r}
+cooksd <- cooks.distance(complex_model)
+
+plot(cooksd, type = "h", main = "Cook's Distance", ylab = "Cook's distance")
+abline(h = 4/length(cooksd), col = "red", lty = 2)
+
+influential <- which(cooksd > 4/length(cooksd))
+influential
+#Although several influental cases were detected, thez were not excluded from the analysis, as these observations represent valid Pokemon characteristics rather than data errors. Excluding them would reduce the representativeness of the dataset.
+```
+
+Normality check
+```{r}
+shapiro.test(residuals(complex_model)) #Shapiro-Wilk test revealed strong violation of normality (p < .001). However, given the large sample size, these deviations are not considered problematic
+qqnorm(residuals(complex_model))
+qqline(residuals(complex_model), col = "red") #Visual inspection of the Q–Q plot suggests that residuals are approximately normally distributed, with minor deviations.
+```
+
+Linearity check
+```{r}
+plot(complex_model, which = 1) #Scatter plot indicates that the linearity assumption is reasonably met
+resettest(complex_model) #The Ramsey RESET test indicates misspecification (p < .001), however visual inspection does not revel strong systematic nonlinearity. Given the large sample size, results suggest minor deviation from linearity.
+```
+
+Homoscedasticity
+```{r}
+plot(complex_model, which = 1) #Visual inspection suggests a mild increase in residual variance at higher fitted values
+bptest(complex_model) #Breusch-Pagan test indicates heteroscedasticity (p < .001). 
+```
+
+Multicollinearty check
+```{r}
+vif(complex_model) #Test suggests no multicollinearity, as all VIF values are well below 5
+```
+
+# New model
+```{r}
+new_model <- lm(attack ~ weight + base_experience + speed, data = pokemon_data) #Considering that in combat the main determining factors are weight, speed and exprecience other predictors were removed from the model.
+```
+
+Influential cases
+```{r}
+cooksd_2 <- cooks.distance(new_model)
+
+plot(cooksd_2, type = "h", main = "Cook's Distance", ylab = "Cook's distance")
+abline(h = 4/length(cooksd_2), col = "red", lty = 2)
+
+influential_2 <- which(cooksd_2 > 4/length(cooksd_2))
+influential_2
+```
+
+Normality
+```{r}
+shapiro.test(residuals(new_model)) #Shapiro-Wilk test suggests that normal distribution is formaly violated (p < .001)
+qqnorm(residuals(new_model))
+qqline(residuals(new_model), col = "red") #Q–Q plot indicates that the residuals are approximately normally distributed with only minor deviations in the tails
+```
+
+Linearity check
+```{r}
+plot(new_model, which = 1) 
+resettest(new_model) #While the residual plot does not show a strong systematic pattern, the RESET test is statistically significant (p < 0.001), suggesting potential model misspecification
+```
+
+Homoscedasticity
+```{r}
+plot(new_model, which = 1)
+bptest(new_model) #Breusch–Pagan test is statistically significant (p < 0.001), indicating the presence of heteroscedasticity. However, given the large sample size, the regression estimates remain reliable
+```
+
+Multicollinearty check
+```{r}
+vif(new_model) #Test suggests no multicollinearity, as all VIF values are well below 5
+```
+
+## Model comparison
+
+complex model
+```{r}
+summary(complex_model)
+summary(complex_model)$adj.r.squared
+confint(complex_model)
+lm.beta::lm.beta(complex_model)
+
+#The complex multiple linear regression model predicting attack from height, weight, base experience, speed, and HP was statistically significant (F(5, 943) = 140.10, p < .001.)
+#The model explained approximately 42.3% of the variance in attack (Adj. R² = .423).
+#Contrary to other predictors, HP was not a significant predictor (p = .417). All other predictos were statistically significant (p < .001)
+#Attack = 34.93 + 3.22(height) + 0.04(weight) + 0.18(base experience) + 0.14(speed) + 0.03(HP)
+```
+
+new model
+```{r}
+summary(new_model)
+summary(new_model)$adj.r.squared
+confint(new_model)
+lm.beta::lm.beta(new_model)
+
+#The multiple linear regression model predicting attack from weight, base experience, and speed was statistically significant (F(3, 945) = 225.10, p < .001). 
+#The model explained approximately 41.5% of the variance in attack (Adj. R² = .415).
+#All variables were significant predictors of Attack (p < .001)
+#Attack = 37.12 + 0.06(weight) + 0.19(base experience) + 0.13(speed)
 ```
 
 ```{r}
+AIC(complex_model, new_model)
+anova(complex_model, new_model)
 
+#The complex model (AIC = 8753.84) showed a better fit compared to the new model with certain predictors removed (AIC = 8765.30)
+#The nnested ANOVA indicated that the complex model provided a significantly better fit than the reduced model (F = 7.74, p < .001), suggesting that the additional predictors significantly improved model performance.
+#The complex model had a higher explained variance (R² = .423) compared to the updated model (R² = .415)
+```
+
+# Updated model
+```{r}
+#Although the complex model demonstrated superior overall fit, the HP predictor was not statistically significant, therefore, an updated model was estimated that retained the structure of the complex model while excluding HP.
+updated_model <- lm(attack ~ height + weight + base_experience + speed, data = pokemon_data)
+
+summary(updated_model)
+summary(updated_model)$adj.r.squared
+confint(updated_model)
+lm.beta::lm.beta(updated_model)
+
+#Attack = 36.41 + 3.30(height) + 0.04(weight) + 0.18(base experience) + 0.13(speed)
+#The model explained approximately 42.3% of the variance in attack (Adj. R² = .423).
+
+AIC(complex_model, new_model)
 ```
 
 ```{r}
+AIC(complex_model, updated_model)
+anova(complex_model, updated_model)
 
+#Model comparison indicated that the updated model (excluding HP) and the complex model did not differ significantly in fit
+#Although the complex model had a slightly higher AIC (8753.84) than the updated model (8752.50), this difference was negligible.
+#Given the negligible difference in AIC and the non-significant contribution of HP, the simpler updated model was retained in favor of parsimony.
 ```
